@@ -1,0 +1,155 @@
+\documentclass[sigconf]{acmart}
+
+\usepackage{xspace}
+% \usepackage[inline]{enumitem}
+
+\begin{document}
+
+\title{No More Nulls!}
+\author{Yisu Remy Wang}
+\affiliation{%
+  \institution{University of Washington}
+  \city{Seattle, WA}
+  \country{USA}
+}
+\email{remywang@cs.washington.edu}
+
+\begin{abstract}
+Since the inception of SQL, 
+ nulls have frustrated database users and builders alike.
+Those writing SQL must painstakingly
+ guard their queries agaist surprising results caused by nulls,
+ while those building database engines
+ constantly struggle to implement the complex semantics of 3-valued logic.
+Given that the relational model already provides a way 
+ to represent missing information,
+ namely, the absence of a tuple in a relation,
+ one may step back and ask: ``Are nulls really necessary?''
+We answer ``No!'' by proposing a new semantics for SQL
+ that completely eliminates nulls.
+Our semantics, called Columnar Semantics, 
+ is as expressive as the standard 3-valued logic semantics,
+ and behaves the same when the data and query are null-free.
+Where the two semantics differ, Columnar Semantics results in simpler queries.
+\end{abstract}
+
+\maketitle
+
+\section{Introduction}
+Nulls in SQL are a pain.
+Among many others,
+ both the founder of the relational model, Codd~\cite{DBLP:books/aw/Codd90},
+ and a co-inventor of SQL, Chamberlin~\cite{DBLP:conf/sigmod/Chamberlin23},
+ have lamented the countless bugs caused by nulls,
+ in both the database engine and the application code.
+The current SQL standard supports nulls via 3-valued logic,
+ which is a common source of confusion for developers~\cite{10.1145/3596673.3603142}.
+Surprisingly, many attempts to address the problem of nulls
+ have focused on increasingly complex many-valued logics~\cite{
+  DBLP:conf/kr/ConsoleGL16,
+  DBLP:journals/sigmod/Date08,
+  DBLP:journals/sigmod/Gessert90,
+  DBLP:conf/future/JiaFM92,
+  10.1145/126482.126487} (all the way to 6-valued logic!).
+These proposals have not seen wide adoption,
+ because they are even harder to understand than 3-valued logic.
+A recent work by Peterfreund and Libkin~\cite{DBLP:conf/pods/LibkinP23}
+ goes the other direction, towards simplicity:
+ they show that the textbook 2-valued logic suffices to capture 
+ the semantics of SQL in the presence of nulls.
+In this paper, we go a step further and argue that \textbf{nulls can be removed altogether}
+ from the SQL language.
+Our key insight is simple: nulls were invented to represent missing information,
+ yet the relational model without nulls already provides a way to indicate information
+ is missing, namely, with the absence of a tuple in a relation.
+But what if only part of a tuple is missing?
+Our solution is to decompose each relation into a collection of (correlated) columns,
+ and an absent entry in a column thus represents missing information
+ in the corresponding attribute of the tuple.
+Specifically, \textbf{we propose Column Normal Form, 
+ a new data normal form} inspired by Sixth Normal Form~\cite{DBLP:books/daglib/0014409} 
+ and Graph Normal Form~\cite{RAIDocumentation}.
+Based on Column Normal Form,
+\textbf{we propose Columnar Semantics, a new semantics for SQL}
+ where the query operates on a collection of columns instead of a collection of rows.
+
+Column Normal Form improves upon the previous normal forms by allowing missing 
+ information in any part of the tuple,
+ even when the relation already satisfies no non-trivial dependencies.
+Columnar Semantics satisfies the desiderata put forward by~\cite{DBLP:conf/pods/LibkinP23}:
+ \begin{enumerate}
+  \item It is as expressive as the standard 3-valued logic semantics.
+  \item For null-free data and query, the behavior is identical to the standard semantics.
+  \item When the two semantics differ, Columnar Semantics results in simpler queries.
+ \end{enumerate}
+While the first two criteria can be defined formally,
+ the third one is rather subjective.
+Peterfreund and Libkin~\cite{DBLP:conf/pods/LibkinP23} provides one interpretation 
+ by measuring the size of the query.
+We achieve simplicity by completely eliminating the complexity of nulls from all queries. 
+
+The idea of handling nulls via normalization is not new.
+LogicBlox and RelationalAI have built
+ successful commercial databases based on Sixth Normal Form
+ and Graph Normal Form~\cite{
+  DBLP:books/daglib/0014409,
+  RAIDocumentation,
+  DBLP:conf/sigmod/ArefCGKOPVW15}.
+In his keynote speech~\cite{DBLP:conf/sigmod/Chamberlin23},
+ Chamberlin also pointed to normalization as 
+ one of the two candidate solutions 
+ to the problem of missing information.
+He also brought up the common criticism of normalization:
+ decomposing the relations introduces additional joins,
+ degrading query performance.
+We follow a simple solution to this problem
+ proposed by Peterfreund and Libkin~\cite{DBLP:conf/pods/LibkinP23}: 
+ since our semantics is as expressive as the standard one,
+ every query under our semantics can be {\em compiled} 
+ into another query under the standard semantics,
+ which is then executed by existing database engines.
+In other words, we provide our null-free semantics as a
+ ``front-end'', or ``user interface'', to the  programmer,
+ while the ``back-end'' database engine remains unchanged.
+On the other hand, the simpler semantics may also enable
+ more sophisticated query optimization and execution techniques, 
+ as evident in~\cite{DBLP:conf/pods/LibkinP23,DBLP:conf/sigmod/ArefCGKOPVW15,RAIDocumentation}.
+In the future, more innovative systems can 
+ directly implement Columnar Semantics 
+ to take advantage of such opportunities.
+
+The rest of this paper is organized as follows.
+Section~\ref{sec:background} reviews background 
+ on missing information in SQL and discusses related work.
+Section~\ref{sec:cnf} introduces Column Normal Form and Columnar Semantics.
+Section~\ref{sec:2v3} compares Columnar Semantics with the standard 3-valued logic semantics, 
+ and show them to be equally expressive.
+Finally, Section~\ref{sec:conclusion}
+ lays out future research directions and concludes.
+
+\section{Background and Related Work}
+\label{sec:background}
+
+The history of nulls in SQL is almost as old as SQL itself,
+ stretching back to the inception of the relational model some 50 years ago.
+We therefore do not attempt to provide a comprehensive survey of the literature, 
+ but rather focus on the fundamentals and the most relevant research.
+In this section, we first review the standard semantics of SQL
+ based on 3-valued logic.
+Then, we discuss prior work on missing information that directly 
+ inspired our approach,
+ including data normalization and semantics based on 2-valued logic.
+
+\section{Column Normal Form and Columnar Semantics}
+\label{sec:cnf}
+
+\section{Columnar Semantics and 3-Valued Logic}
+\label{sec:2v3}
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{nulls}
+
+\end{document}
