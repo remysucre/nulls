@@ -1,7 +1,23 @@
 \documentclass[sigconf]{acmart}
 
 \usepackage{xspace}
-% \usepackage[inline]{enumitem}
+% \usepackage{amsmath}
+\usepackage{listings}
+\usepackage{subcaption}
+
+\lstset{
+  mathescape=true,
+  language=SQL,
+  columns=flexible,
+  keepspaces=true,
+  showstringspaces=false,
+  stringstyle=\slshape\color{green!40!black},
+  basicstyle=\ttfamily\small,
+  morekeywords={*, self},
+  commentstyle=\slshape\color{black!60},
+  tabsize=2,
+}
+
 
 \begin{document}
 
@@ -20,7 +36,7 @@ Since the inception of SQL,
 Those writing SQL must painstakingly
  guard their queries agaist surprising results caused by nulls,
  while those building database engines
- constantly struggle to implement the complex semantics of 3-valued logic.
+ constantly struggle to implement the subtle semantics of 3-valued logic.
 Given that the relational model already provides a way 
  to represent missing information,
  namely, the absence of a tuple in a relation,
@@ -139,6 +155,277 @@ In this section, we first review the standard semantics of SQL
 Then, we discuss prior work on missing information that directly 
  inspired our approach,
  including data normalization and semantics based on 2-valued logic.
+
+\subsection{SQL and 3-Valued Logic}
+We present here a condensed overview of SQL and its semantics,
+ aiming to provide intuition rather than completeness.
+Our techniques supports the full set of relational algebra 
+ defined in~\cite{DBLP:conf/pods/LibkinP23}.
+
+A {\em query} has the form:
+%
+\lstinline[mathescape=true]|SELECT $\vec{e},\vec{\gamma}$ FROM $\vec{R}$ WHERE $\phi$ GROUP BY $\vec{v}$|,
+%
+where $\vec{e}$ is a list of expressions,
+ $\vec{\gamma}$ is a list of aggregate expressions,
+ $\vec{R}$ is a list of relations,
+ $\phi$ is a formula,
+ and $\vec{v}$ is a list of attributes.
+An {\em expression} consists of functions 
+ (like $+$ and $\times$),
+ constants, and attributes;
+ an {\em aggregate expression} is an
+ aggregate funciton 
+ (like \lstinline[mathescape=true]|COUNT| 
+ and \lstinline[mathescape=true]|SUM|)
+ applied to an expression;
+ a {\em formula} consists of predicates over expressions
+ (e.g., $e_1 = e_2$ and $e_1 < e_2$) 
+ connected by the logical connectives 
+ \lstinline|AND|,
+ \lstinline|OR|, and
+ \lstinline|NOT|.
+We omit features like 
+ \lstinline|IN|,
+ \lstinline|ANY|, 
+ \lstinline|ALL|,
+ and subqueries, 
+ as they can be eliminated via standard techniques~\cite{DBLP:conf/pods/LibkinP23, DBLP:conf/btw/0001K15}.
+ 
+Without aggregates, the meaning of a query can be understood
+ as follows:
+ we nondeterministically choose a tuple
+ from each relation in $\vec{R}$ 
+ and evaluate the formula $\phi$ over them;
+ if $\phi$ evaluates to true,
+ we evaluate each expression in $\vec{e}$ and outout the result.
+To evaluate aggregation,
+ we first compute the tuples as above,
+ then group them by the attributes in $\vec{v}$,
+ and finally apply the aggregate function to each group.
+When evaluating an expression or an aggregation, 
+ any null input results in a null output.
+A predicate returns \lstinline|UNKNOWN| if 
+ any of its arguments is null;
+ one exception is the predicate \lstinline|IS NULL|
+ which returns \lstinline|TRUE| if its argument is null,
+ and \lstinline|FALSE| otherwise.
+In a formula, truth values are propagated
+ following Kleene's 3-valued logic as follows, 
+ where $t$ stands for \lstinline|TRUE|, 
+ $f$ for \lstinline|FALSE|, and $u$ for \lstinline|UNKNOWN|:
+
+\begin{tabular}{ c|ccc } 
+  \lstinline|AND| & t & f & u \\ 
+  \hline
+  t & t & f & u \\
+  f & f & f & f \\
+  u & u & f & u
+\end{tabular}\qquad
+%
+\begin{tabular}{ c|ccc } 
+  \lstinline|OR| & t & f & u \\ 
+  \hline
+  t & t & t & t \\
+  f & t & f & u \\
+  u & t & u & u
+\end{tabular}\qquad
+%
+\begin{tabular}{ c|c } 
+  \lstinline|NOT| &  \\ 
+  \hline
+  t & f \\
+  f & t \\
+  u & u 
+\end{tabular}\quad
+
+\begin{example}
+\label{ex:sql}
+The 3-valued logic semantics can produce surprising results.
+Consider the query \lstinline|SELECT * FROM R WHERE R.x = R.x|.
+One would expect the result to be the same as the relation \lstinline|R|,
+ due to the reflexivity of equality.
+However, because \lstinline|=| returns \lstinline|UNKNOWN| 
+ when either argument is null,
+ the query drops all entries 
+ where \lstinline|x| is null.
+\end{example}
+
+Surprises like Example~\ref{ex:sql} 
+ can lead to subtle bugs in SQL queries. 
+They also complicate the implementation of database engines, 
+ as common algebraic properties like the reflexivity of equality
+ can no longer be assumed when authoring optimization rules.
+
+\subsection{Handling Nulls with 2-Valued Logic}
+
+One source of confusion in 3-valued logic
+ is the unfamiliar behavior of \lstinline|UNKNOWN|.
+Most developers are accustomed to 2-valued logic,
+ where the only truth values are \lstinline|TRUE| and \lstinline|FALSE|.
+Fortunately, and perhaps surprisingly,
+ 2-valued logic can already capture the semantics of SQL 
+ in the presence of nulls, 
+ as shown by Peterfreund and Libkin~\cite{DBLP:conf/pods/LibkinP23}.
+Their semantics requires only a simple modification:
+ whenever an argument to a predicate is null,
+ return \lstinline|FALSE| instead of \lstinline|UNKNOWN|.
+This way, query evaluation may proceed purely in 2-valued logic
+ following the standard semantics of the logical connectives.
+Peterfreund and Libkin proved their new semantics 
+ agrees with the standar 3-valued logic semantics
+ when the data and query are null-free,
+ and the two semantics have exactly the same expressive power.
+Consequently, every query under the new semantics
+ can be compiled into another query under the standard semantics,
+ which is to be executed by an existing database engine.
+In other words, adopting the new semantics 
+ incurs no performance penalty,
+ assuming a sufficiently sophisticated compiler.
+
+Nevertheless, the new semantics is not without 
+ controversy\footnote{The author of this paper was sandwiched between the two sides of 
+ a passionate debate during the Q\&A session of~\cite{DBLP:conf/pods/LibkinP23}.}.
+For example, neither \lstinline|NULL = NULL| nor \lstinline|NULL $\neq$ NULL|
+ is true, defying the intuition that \lstinline|NULL $\neq$ NULL|
+ is the same as \lstinline|NOT (NULL = NULL)|.
+Moreover, because \lstinline|NULL = NULL| is false, 
+ the query in Example~\ref{ex:sql} still drops null entries.
+Peterfreund and Libkin resolves this with
+ a more complex interpretation of comparisons,
+ but it's not clear if this alternative interpretation
+ introduces further complications.
+It appears our troubles will not end, 
+ as long as nulls remain.
+
+\subsection{Eliminating Nulls via Decomposition}
+One alternative to nulls is to simply
+ use the absence of a tuple to indicate missing information.
+But when only part of a tuple is missing, 
+ dropping the entire tuple loses information.
+A solution is to decompose, the relation into smaller ones
+ such that each tuple is represented by the join 
+ of smaller pieces, and each piece can be missing.
+This is the approach implemented by LogicBlox 
+ and RelationalAI~\cite{RAIDocumentation,DBLP:conf/sigmod/ArefCGKOPVW15},
+ and advocated by Date et.al.~\cite{DBLP:journals/sigmod/Date08,DBLP:books/daglib/0014409}.
+We illustrate the idea with an example.
+
+% \begin{figure}
+% \begin{subfigure}[c]{0.6\linewidth}
+% \begin{tabular}{|c|c|c|}
+% \hline
+% \textsf{Author} & \textsf{Institute} & \textsf{Address} \\ 
+% \hline
+% Codd & IBM & San Jose \\
+% Chamberlin & IBM & \lstinline|NULL| \\
+% Boyce & \lstinline|NULL| & San Jose \\
+% \hline
+% \end{tabular}
+% \end{subfigure}
+% \begin{subfigure}[c]{0.39\linewidth}
+% \centering
+% \begin{tabular}{|c|c|}
+% \hline
+% \textsf{Author} & \textsf{Institute} \\
+% \hline
+% Codd & IBM \\
+% Chamberlin & IBM \\
+% \hline
+% \end{tabular}
+
+% \vspace{1em}
+% \centering
+% \begin{tabular}{|c|c|}
+% \hline
+% \textsf{Author} & \textsf{Address} \\ 
+% \hline
+% Codd & San Jose \\
+% Boyce & San Jose \\
+% \hline
+% \end{tabular}
+% \end{subfigure}
+% \caption{A table with nulls and its decomposition.}
+% \end{figure}
+
+\begin{figure}
+\begin{subfigure}{\linewidth}
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+\textsf{Author} & \textsf{Institute} & \textsf{Address} \\ 
+\hline
+Codd & IBM & San Jose \\
+Chamberlin & IBM & \lstinline|NULL| \\
+Boyce & \lstinline|NULL| & San Jose \\
+\hline
+\end{tabular}
+\caption{Missing information is marked with \lstinline|NULL|.}
+\label{fig:table-null}
+\vspace{1em}
+\end{subfigure}
+\begin{subfigure}{\linewidth}
+\centering
+\begin{tabular}{|c|c|}
+\hline
+\textsf{Author} & \textsf{Institute} \\
+\hline
+Codd & IBM \\
+Chamberlin & IBM \\
+\hline
+\end{tabular}
+\hspace{1em}
+\begin{tabular}{|c|c|}
+\hline
+\textsf{Author} & \textsf{Address} \\ 
+\hline
+Codd & San Jose \\
+Boyce & San Jose \\
+\hline
+\end{tabular}
+\caption{Decomposition into two null-free relations.}
+\label{fig:table-normalized}
+\end{subfigure}
+\caption{A relation with nulls and its decomposition.}
+\end{figure}
+
+\begin{example}
+\label{ex:normalization}
+Consider the relation in Figure~\ref{fig:table-null}, 
+ where two values are missing and marked with \lstinline|NULL|.
+It can be decomposed into the two relations in Figure~\ref{fig:table-normalized}
+ which hold the same information, but does not use nulls.
+\end{example}
+
+After decomposing every relation into ones without nulls,
+ queries can be evaluated with the standard 2-valued logic semantics.
+However, it is not always possible to fully eliminate nulls via decomposition.
+In Example~\ref{ex:normalization}, 
+ we have implicitely assumed the \textsf{Author} attribute 
+ to be a key and may never be missing.
+But if we add a tuple 
+%
+\begin{tabular}{|c|c|c|}
+\hline
+\lstinline|NULL| & UW & Seattle\\
+\hline
+\end{tabular}
+%
+ to the relation, 
+ then the relation cannot be decomposed at all.
+In other words, decomposition assumes at least one column must never contain nulls. 
+Another common criticism of decomposition is that
+ it introduces additional joins in each query, 
+ which can degrade performance and readability.
+For example, every join with the table in Figure~\ref{fig:table-null}
+ then becomes two joins with both tables in Figure~\ref{fig:table-normalized}.
+
+We will see how all shortcomings above can be addressed 
+ by Column Normal Form and Columnar Semantics.
+Specifically, we allow missing information in any part of the relation;
+ the query is as readable as the original one, and in many cases idential;
+ and it is always possible to compile the query into the original one,
+ losing no performance at all.
 
 \section{Column Normal Form and Columnar Semantics}
 \label{sec:cnf}
