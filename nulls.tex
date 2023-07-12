@@ -138,7 +138,7 @@ The rest of this paper is organized as follows.
 Section~\ref{sec:background} reviews background 
  on missing information in SQL and discusses related work.
 Section~\ref{sec:cnf} introduces Column Normal Form and Columnar Semantics.
-Section~\ref{sec:2v3} compares Columnar Semantics with the standard 3-valued logic semantics, 
+Section~\ref{sec:cv3} compares Columnar Semantics with the standard 3-valued logic semantics, 
  and show them to be equally expressive.
 Finally, Section~\ref{sec:conclusion}
  lays out future research directions and concludes.
@@ -399,7 +399,7 @@ Boyce & San Jose \\
 Consider the relation in Figure~\ref{fig:table-null}, 
  where two values are missing and marked with \lstinline|NULL|.
 It can be decomposed into the two relations in Figure~\ref{fig:table-normalized}
- which hold the same information, but does not use nulls.
+ which hold the same information, but do not use nulls.
 \end{example}
 
 After decomposing every relation into ones without nulls,
@@ -432,12 +432,13 @@ Specifically, we allow missing information in any part of the relation;
  and it is always possible to compile the query into the original one,
  losing no performance at all.
 
-\section{Column Normal Form}
+\section{Column Normal Form and Columnar Semantics}
 \label{sec:cnf}
 
-\section{Columnar Semantics}
+\section{Capturing SQL with Columnar Semantics}
+\label{sec:cv3}
 
-\section{Conclusion}
+\section{Discussion}
 \label{sec:conclusion}
 
 \bibliographystyle{ACM-Reference-Format}
