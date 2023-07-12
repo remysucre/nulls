@@ -159,7 +159,7 @@ Then, we discuss prior work on missing information that directly
 \subsection{SQL and 3-Valued Logic}
 We present here a condensed overview of SQL and its semantics,
  aiming to provide intuition rather than completeness.
-Our techniques supports the full set of relational algebra 
+Our technique supports the full set of relational algebra 
  defined in~\cite{DBLP:conf/pods/LibkinP23}.
 
 A {\em query} has the form:
@@ -171,7 +171,7 @@ where $\vec{e}$ is a list of expressions,
  $\vec{R}$ is a list of relations,
  $\phi$ is a formula,
  and $\vec{v}$ is a list of attributes.
-An {\em expression} consists of functions 
+An {\em expression} is built up with functions 
  (like $+$ and $\times$),
  constants, and attributes;
  an {\em aggregate expression} is an
@@ -203,7 +203,7 @@ To evaluate aggregation,
  we first compute the tuples as above,
  then group them by the attributes in $\vec{v}$,
  and finally apply the aggregate function to each group.
-When evaluating an expression or an aggregation, 
+When evaluating an expression or applying an aggregate function, 
  any null input results in a null output.
 A predicate returns \lstinline|UNKNOWN| if 
  any of its arguments is null;
@@ -289,8 +289,8 @@ Nevertheless, the new semantics is not without
 For example, neither \lstinline|NULL = NULL| nor \lstinline|NULL $\neq$ NULL|
  is true, defying the intuition that \lstinline|NULL $\neq$ NULL|
  is the same as \lstinline|NOT (NULL = NULL)|.
-Moreover, because \lstinline|NULL = NULL| is false, 
- the query in Example~\ref{ex:sql} still drops null entries.
+% Moreover, because \lstinline|NULL = NULL| is false, 
+%  the query in Example~\ref{ex:sql} still drops null entries.
 Peterfreund and Libkin resolves this with
  a more complex interpretation of comparisons,
  but it's not clear if this alternative interpretation
@@ -303,9 +303,14 @@ One alternative to nulls is to simply
  use the absence of a tuple to indicate missing information.
 But when only part of a tuple is missing, 
  dropping the entire tuple loses information.
-A solution is to decompose, the relation into smaller ones
+A solution is to decompose the relation into smaller ones
  such that each tuple is represented by the join 
  of smaller pieces, and each piece can be missing.
+Usually, the relation is decomposed into a certain 
+ {\em normal form}, 
+ for example Sixth Normal Form~\cite{DBLP:books/daglib/0014409}
+ and Graph Normal Form~\cite{RAIDocumentation}.
+A relation is in normal form if it cannot be decomposed further,
 This is the approach implemented by LogicBlox 
  and RelationalAI~\cite{RAIDocumentation,DBLP:conf/sigmod/ArefCGKOPVW15},
  and advocated by Date et.al.~\cite{DBLP:journals/sigmod/Date08,DBLP:books/daglib/0014409}.
@@ -420,18 +425,17 @@ Another common criticism of decomposition is that
 For example, every join with the table in Figure~\ref{fig:table-null}
  then becomes two joins with both tables in Figure~\ref{fig:table-normalized}.
 
-We will see how all shortcomings above can be addressed 
+We will see how the above shortcomings can be addressed 
  by Column Normal Form and Columnar Semantics.
 Specifically, we allow missing information in any part of the relation;
  the query is as readable as the original one, and in many cases idential;
  and it is always possible to compile the query into the original one,
  losing no performance at all.
 
-\section{Column Normal Form and Columnar Semantics}
+\section{Column Normal Form}
 \label{sec:cnf}
 
-\section{Columnar Semantics and 3-Valued Logic}
-\label{sec:2v3}
+\section{Columnar Semantics}
 
 \section{Conclusion}
 \label{sec:conclusion}
