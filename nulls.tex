@@ -33,7 +33,7 @@ Those writing SQL must painstakingly
  constantly struggle to implement the subtle semantics of 3-valued logic.
 Given that the relational model already provides a way 
  to represent missing information,
- namely, the absence of a tuple in a relation,
+ namely, with the absence of a tuple in a relation,
  one may step back and ask: ``Are nulls really necessary?''
 We answer ``No!'' by proposing a new semantics for SQL
  that completely eliminates nulls.
@@ -107,7 +107,7 @@ LogicBlox and RelationalAI have built
   DBLP:conf/sigmod/ArefCGKOPVW15}.
 In his keynote speech~\cite{DBLP:conf/sigmod/Chamberlin23},
  Chamberlin also pointed to normalization as 
- one of the two candidate solutions 
+ one of two candidate solutions 
  to the problem of missing information.
 He also brought up the common criticism of normalization:
  decomposing the relations introduces additional joins,
@@ -180,12 +180,13 @@ An {\em expression} is built up with functions
  \lstinline|AND|,
  \lstinline|OR|, and
  \lstinline|NOT|.
-We omit features like 
+We also support features like 
  \lstinline|IN|,
  \lstinline|ANY|, 
  \lstinline|ALL|,
  and subqueries, 
- as they can be eliminated via standard techniques~\cite{DBLP:conf/pods/LibkinP23, DBLP:conf/btw/0001K15}.
+ by reducing them to the above constructs
+ via standard techniques~\cite{DBLP:conf/pods/LibkinP23, DBLP:conf/btw/0001K15}.
  
 Without aggregates, the meaning of a query can be understood
  as follows:
@@ -193,7 +194,7 @@ Without aggregates, the meaning of a query can be understood
  from each relation in $\vec{R}$ 
  and evaluate the formula $\phi$ over them;
  if $\phi$ evaluates to true,
- we evaluate each expression in $\vec{e}$ and outout the result.
+ we evaluate each expression in $\vec{e}$ and output the result.
 To evaluate aggregation,
  we first compute the tuples as above,
  then group them by the attributes in $\vec{v}$,
@@ -202,7 +203,7 @@ When evaluating an expression or applying an aggregate function,
  any null input results in a null output.
 A predicate returns \lstinline|UNKNOWN| if 
  any of its arguments is null;
- one exception is the predicate \lstinline|IS NULL|
+ one exception is the predicate ``\lstinline|IS NULL|''
  which returns \lstinline|TRUE| if its argument is null,
  and \lstinline|FALSE| otherwise.
 In a formula, truth values are propagated
@@ -266,7 +267,7 @@ Their semantics requires only a simple modification:
  whenever an argument to a predicate is null,
  return \lstinline|FALSE| instead of \lstinline|UNKNOWN|.
 This way, query evaluation may proceed purely in 2-valued logic
- following the standard semantics of the logical connectives.
+ following the standard behavior of the logical connectives.
 Peterfreund and Libkin proved their new semantics 
  agrees with the standar 3-valued logic semantics
  when the data and query are null-free,
@@ -279,7 +280,7 @@ In other words, adopting the new semantics
  assuming a sufficiently sophisticated compiler.
 
 Nevertheless, the new semantics is not without 
- controversy\footnote{The author of this paper was sandwiched between the two sides of 
+ controversy\footnote{The author of this paper was sandwiched between two sides of 
  a passionate debate during the Q\&A session of~\cite{DBLP:conf/pods/LibkinP23}.}.
 For example, neither \lstinline|NULL = NULL| nor \lstinline|NULL $\neq$ NULL|
  is true, defying the intuition that \lstinline|NULL $\neq$ NULL|
@@ -398,7 +399,7 @@ It can be decomposed into the two relations in Figure~\ref{fig:table-normalized}
 \end{example}
 
 After decomposing every relation into ones without nulls,
- queries can be evaluated with the standard 2-valued logic semantics.
+ queries can be evaluated with the textbook 2-valued logic.
 However, it is not always possible to fully eliminate nulls via decomposition.
 In Example~\ref{ex:normalization}, 
  we have implicitely assumed the \textsf{Author} attribute 
@@ -418,7 +419,7 @@ Another common criticism of decomposition is that
  it introduces additional joins in each query, 
  which can degrade performance and readability.
 For example, every join with the table in Figure~\ref{fig:table-null}
- then becomes two joins with both tables in Figure~\ref{fig:table-normalized}.
+ becomes up to two joins with both tables in Figure~\ref{fig:table-normalized}.
 
 We will see how the above shortcomings can be addressed 
  by Column Normal Form and Columnar Semantics.
@@ -519,8 +520,8 @@ Decomposing into Column Normal Form allows us to
  simply by dropping the entry in the corresponding relation.
 We even allow an entire tuple to be missing --
  that is, a table row with empty cells (as opposed to the absence of a row).
-In this case, we retain the primary key relation, 
- but drop the entries in all other relations.
+In this case, we retain the entry in the relation holding only keys, 
+ but drop the corresponding entries in all other relations.
 Retainig empty rows is useful.
 For example, five empty rows may indicate we lost the data
  of five correspondents in a survey, 
@@ -536,28 +537,48 @@ However, $Q'$ may be slower and more complex,
 Explicitly joining together the normalized relations
  also requires writing down the opaque column
  in the query, further complicating the query.
-\begin{example}
-\label{ex:cnf-query}  
-The following query over relation \lstinline|R| in Figure~\ref{fig:table-null}: 
-%
-\begin{lstlisting}
-SELECT Address FROM R WHERE R.Author = "Codd"
+
+\begin{figure}
+\begin{subfigure}[t]{0.4\linewidth}
+\begin{lstlisting}[showlines=true]
+SELECT Address 
+  FROM R 
+
+ WHERE R.Author = "Codd"
+
+
 \end{lstlisting}
-%
-can be simulated by the query:
-%
+\caption{Original SQL query.}
+\label{fig:codd}
+\end{subfigure}
+\;
+\begin{subfigure}[t]{0.5\linewidth}
 \begin{lstlisting}
 SELECT R_Adress.Address 
-  FROM R_id, R_Author, R_Address
+  FROM R_Author, R_Address,
+       R_id
  WHERE R_id.id = R_Author.id 
    AND R_id.id = R_Address.id
    AND R1.Author = "Codd"
 \end{lstlisting}
+\caption{Simulating the query in~\ref{fig:codd}.}
+\end{subfigure}
+\caption{Simulating a SQL query over Column Normal Form.}
+\label{fig:simulate}
+\end{figure}
+
+\begin{example}
+\label{ex:cnf-query}  
+The following query over relation \lstinline|R| in Figure~\ref{fig:table-null}: 
+%
+%
+can be simulated by the query:
+%
 %
 where \lstinline|R_id|, \lstinline|R_Author|, and \lstinline|R_Address|
  are the normalized relations for the key column, 
  the \textsf{Author} column, and the \textsf{Address} column, respectively.
-The join with \lstinline|R_id| can be omitted, 
+In this example, the join with \lstinline|R_id| can be omitted, 
  but we keep it here to help explain the semantics in Section~\ref{sec:cs}.
 \end{example}
 To address the above problems, 
@@ -573,7 +594,7 @@ Intuitively, Columnar Semantics treats a standard SQL query
  as a syntactice sugar for another set of {\em expanded queries}
  over the normalized relations.
 The reason we need a {\em set} of queries is that
- the output of the original query under 3-valued logic semantics may 
+ the output of the original query under the 3-valued logic semantics may 
  also contain nulls, 
  therefore we must also represent the output relation in Column Normal Form. 
 We stress that these decomposed relations,
@@ -585,24 +606,27 @@ As every query under Columnar Semantics
  and the queries over them are never executed.
 
 \begin{figure}
+\centering
+\begin{tabular}{c}
 \begin{lstlisting}
 SELECT ids($\vec{R}$), rename$(e_1)$ FROM normalize$(\vec{R})$ 
  WHERE expand$(\phi)$ GROUP BY rename$(\vec{v})$
-\end{lstlisting}
+\end{lstlisting}\\
 \begin{lstlisting}[basicstyle=\color{black!40}\ttfamily\small]
 SELECT ids($\vec{R}$), rename$({\color{red} e_2})$ FROM normalize$(\vec{R})$ 
  WHERE expand$(\phi)$ GROUP BY rename$(\vec{v})$
-\end{lstlisting}
-\hspace{-7em}\dots
+\end{lstlisting}\\
+\dots\\
 \begin{lstlisting}[basicstyle=\color{black!40}\ttfamily\small]
 SELECT ids($\vec{R}$), rename$({\color{red}\gamma_1})$ FROM normalize$(\vec{R})$ 
  WHERE expand$(\phi)$ GROUP BY rename$(\vec{v})$
-\end{lstlisting}
+\end{lstlisting}\\
 \begin{lstlisting}[basicstyle=\color{black!40}\ttfamily\small]
 SELECT ids($\vec{R}$), rename$({\color{red}\gamma_2})$ FROM normalize$(\vec{R})$ 
  WHERE expand$(\phi)$ GROUP BY rename$(\vec{v})$
-\end{lstlisting}
-\hspace{-7em}\dots
+\end{lstlisting}\\
+\dots
+\end{tabular}
 \caption{Expanded queries of $Q$ in Definition~\ref{def:cs}.}
 \label{fig:expanded}
 \end{figure}
@@ -647,7 +671,7 @@ Given an expression $e$, or an aggregate expression $\gamma$,
  with the set of relations in $R$'s Column Normal Form.
 Finally, \lstinline|expand| renames attributes as above, 
  and for each attribute $R.a$ in $\phi$, 
- introduce a new predicate $R_a.\text{id} = R_\text{id}.\text{id}$,
+ introduces a new predicate $R_a.\text{id} = R_\text{id}.\text{id}$,
  where $R_\text{id}$ is the relation holding the opaque keys.
 \end{definition}
 
@@ -661,8 +685,6 @@ In other words, \textbf{we can keep the original query unchanged},
 Of course, the Columnar Semantics does not 
  always agree with the standard semantics
  in the presence of nulls.
-We will show exactly when the two semantics disagree
- in Section~\ref{sec:cv3}.
 \end{example}
 
 One intuitive way to understand the Columnar Semantics 
@@ -670,7 +692,7 @@ One intuitive way to understand the Columnar Semantics
 Two entries in different columns are correlated, 
  when they belong to the same tuple in the original relation.
 When we evaluate a query, the \lstinline|WHERE| clause 
- only evaluates to true when the all values of each attribute
+ only evaluates to true when the values of all attributes
  in the same table are correlated.
 
 There is a small problem with the current semantics.
@@ -747,7 +769,7 @@ Consider the following query:
 \begin{lstlisting}
  SELECT * FROM R WHERE NOT (R.x = R.x)
 \end{lstlisting}
-Under 2-valued logic semantics, 
+Under the 2-valued logic semantics, 
  the query returns all tuples where \lstinline|x| is null, 
  because \lstinline|NOT (NULL = NULL)| is true.
 Under Columnar Semantics, 
@@ -763,40 +785,47 @@ We would argue that the result produced
 Our solution is as follows.
 We first push down all negations to the leaves of the formula, 
  by applying De Morgan's laws.
-Then, for each negated predicate \lstinline|NOT P(R.x, S.y)|
- we add to the expanded set a new query where the predicate is 
- replaced by \lstinline|(R MISSING x) OR (S MISSING y)|. 
+Then, we replace negated predicate \lstinline|NOT P(R.x, S.y)|
+ with the following:
+%
+\begin{lstlisting}
+(R MISSING x) OR (S MISSING y) OR NOT P(R.x, S.y)
+\end{lstlisting}
+% 
 This simulates the behavior of \lstinline|NOT P(R.x, S.y)|
- under 2-valued logic semantics, 
+ under the 2-valued logic semantics, 
  where it returns true when either argument is null.
 
-In our solution above, we used an expansion scheme 
- that could potentially generate an exponential number of queries
- in the number of negated predicates.
-This was done to provide intuition
- for our claim that Columnar Semantics captures the 2-valued logic semantics,
- and we leave to future work to find a more efficient expansion scheme.
-On the other hand, it may be acceptable
- that 2-valued logic queries with negations 
- correspond to a large number of expanded queries in Columnar Semantics.
-Because the behavior of negation in the 2-valued logic semantics 
- is unintuitive in the presence of nulls, 
- the expanded query in Columnar Semantics exposes this very complexity.
-In other words, Columnar Semantics encourages simple, clear queries, 
- and discourages complex, confusing queries.
+Our transformation above ensures the resulting query 
+ has size linear in the size of the query in 2-valued logic.
+Together with the result by Peterfreund and Libkin~\cite{DBLP:conf/pods/LibkinP23}
+ that the standard SQL semantics can be simulated by 
+ a linear-size query in 2-valued logic semantics,
+ we conclude that Columnar Semantics 
+ can capture the standard semantics in linear size as well.
+
+% Nevertheless, we did have to expand the query 
+%  to handle the behavior of negations over nulls.
+% We argue this is acceptable:
+%  because the behavior of negation in the 2-valued logic semantics 
+%  is unintuitive in the presence of nulls, 
+%  the expanded query in Columnar Semantics exposes this very complexity.
+% In other words, Columnar Semantics encourages simple, clear queries, 
+%  and discourages complex, confusing queries.
 
 \section{Discussion}
 \label{sec:conclusion}
+
+{\color{red} We are actually linear. Test Columnar Semantics .}
 
 With Column Normal Form and Columnar Semantics, 
  we take the first step towards a semantics for SQL
  completely without nulls.
 Yet much remains to be done.
 One immediate task is to formally prove our claims
- in Section~\ref{sec:cv3}, 
- ideally with an expansion scheme that produces 
- queries of linear size.
-We thus state the following conjecture:
+ in Section~\ref{sec:cv3}: 
+%
+{\color{red} Move the conjecture to Section~\ref{sec:cv3}}
 %
 \begin{conjecture}
 For every query $Q^{3v}$ in the standard 3-valued semantics, 
@@ -805,8 +834,8 @@ For every query $Q^{3v}$ in the standard 3-valued semantics,
  and $\vec{Q}^{cs}$ simulates $Q^{3v}$.
 In the converse, for every (non-expanded) $Q^{cs}$ query in Columnar Semantics, 
  there is a $Q^{3v}$ query in the standard 3-valued semantics,
- where the size of $Q^{3v}$ is linear in the size of $\vec{Q}^{cs}$,
-  and $Q^{3v}$ simulates $\vec{Q}^{cs}$.
+ where the size of $Q^{3v}$ is linear in the size of $Q^{cs}$,
+  and $Q^{3v}$ simulates $Q^{cs}$.
 \end{conjecture}
 %
 The first direction ensures we can express every SQL query 
@@ -835,7 +864,7 @@ A potential solution to the challenges in
  is to directly execute Columnar Semantics
  without the detour to 3-valued logic.
 As a side effect of its design, the Columnar Semantics
- may be more amenable to modern query processing techniques.
+ may in fact be more amenable to modern query processing techniques.
 For example, algorithms like Worst-Case Optimal Joins~\cite{DBLP:journals/jacm/NgoPRR18}
  can run {\em faster} when there are more, skinnier tables. 
 Relations in Column Normal Form can also be considered 
@@ -845,7 +874,7 @@ Last but not least,
  it is no coincidence that the names ``Column Normal Form'' and ``Columnar Semantics''
  are reminiscent of the columnar architecture for databases.
 As such architecture already stores tables by columns, 
- Columnar Semantics may even be ``closer to the metal'' 
+ Columnar Semantics may be even ``closer to the metal'' 
  than the standard semantics.
 
 We have focused on the comparison of Columnar Semantics 
@@ -854,7 +883,7 @@ But there are already successful databases
  that do not use nulls at all,
  as implemented by LogicBlox and RelationalAI~\cite{RAIDocumentation,DBLP:conf/sigmod/ArefCGKOPVW15}.
 What is our contribution, then?
-We think of the approach such existing systems
+We think of the approach of these existing systems
  as ``manual null management'', 
  where the developer explicitly specifies what to do with missing information.
 This is beneficial in some cases where one requires
