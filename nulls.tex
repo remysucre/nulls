@@ -1,5 +1,6 @@
 \documentclass[sigconf]{acmart}
 
+\usepackage{bm}
 \usepackage{xspace}
 \usepackage{listings}
 \usepackage{subcaption}
@@ -43,6 +44,11 @@ Our semantics, called Columnar Semantics,
  is as expressive as the standard 3-valued logic semantics,
  and behaves the same when the data and query are null-free.
 Where the two semantics differ, Columnar Semantics results in simpler queries.
+To evaluate Columnar Semantics and any other alternative semantics 
+ or query languages, 
+ we propose MIA (Missing Information Artifacts),
+ a collection of queries and data sets for handling missing information,
+ and invite contributions from the community.
 \end{abstract}
 
 \maketitle
@@ -592,24 +598,6 @@ We call this new semantics {\em Columnar Semantics}.
 \section{Columnar Semantics}
 \label{sec:cs}
 
-\begin{figure}
-\centering
-\begin{tikzpicture}
-  \matrix (m) [matrix of math nodes, row sep=3em, column sep=5em]
-  {
-    I & O \\
-    I' & O' \\
-  };
-
-  \draw[->] (m-1-1) -- (m-1-2) node[midway, align=center, fill=white] {$Q_\text{3vl}$};
-  \draw[->] (m-1-1) -- (m-2-1) node[midway, align=center, fill=white] {c.n.f.};
-  \draw[->] (m-2-1) -- (m-2-2) node[midway, align=center, fill=white] {$Q_\text{cs}$};
-  \draw[->] (m-2-2) -- (m-1-2) node[midway, align=center, fill=white] {$\Join$};
-\end{tikzpicture}
-\caption{Relating 3-valued logic to Columnar Semantics.}
-\label{fig:3vl-cs}
-\end{figure}
-
 Intuitively, Columnar Semantics treats a standard SQL query 
  as a syntactice sugar for another set of {\em expanded queries}
  over the normalized relations.
@@ -728,10 +716,45 @@ To express the same query,
  to indicate a tuple in \lstinline|R|
  is missing the value of attribute \lstinline|a|.
 During expansion, we desugar \lstinline|R MISSING a|
- to \lstinline|R$_\texttt{id}$.id NOT IN R$_\texttt{a}$.id|.
+ to \lstinline|R$_\texttt{id}$.id NOT IN (SELECT id FROM R$_\texttt{a}$)|.
 
 \section{Columnar Semantics Captures SQL}
 \label{sec:cv3}
+
+\begin{figure}
+\begin{subfigure}{0.49\linewidth}
+\centering
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=3em, column sep=5em]
+  {
+    I & O \\
+    I' & O' \\
+  };
+
+  \draw[->] (m-1-1) -- (m-1-2) node[midway, align=center, fill=white] {$Q_\text{3vl}$};
+  \draw[->] (m-1-1) -- (m-2-1) node[midway, align=center, fill=white] {c.n.f.};
+  \draw[->] (m-2-1) -- (m-2-2) node[midway, align=center, fill=white] {$Q_\text{cs}$};
+  \draw[->] (m-2-2) -- (m-1-2) node[midway, align=center, fill=white] {$\Join$};
+\end{tikzpicture}
+\end{subfigure}
+\begin{subfigure}{0.49\linewidth}
+\centering
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=3em, column sep=5em]
+  {
+    I' & O' \\
+    I & O \\
+  };
+
+  \draw[->] (m-1-1) -- (m-1-2) node[midway, align=center, fill=white] {$Q_\text{cs}$};
+  \draw[->] (m-1-1) -- (m-2-1) node[midway, align=center, fill=white] {$\Join$};
+  \draw[->] (m-2-1) -- (m-2-2) node[midway, align=center, fill=white] {$Q_\text{3vl}$};
+  \draw[->] (m-2-2) -- (m-1-2) node[midway, align=center, fill=white] {$c.n.f.$};
+\end{tikzpicture}
+\end{subfigure}
+\caption{Relating 3-valued logic to Columnar Semantics.}
+\label{fig:3vl-cs}
+\end{figure}
 
 Recall that the first two desiderata of any new semantics for SQL, 
  as proposed by Peterfreund and Libkin~\cite{DBLP:conf/pods/LibkinP23},
@@ -742,6 +765,37 @@ These requirements ensure every SQL query can be expressed in the
  and that we can always compile queries in the new semantics into the standard one,
  to be executed by existing database engines.
 In this section, we show Columnar Semantics satisfies both requirements.
+More precisely, we put forward the following proposition:
+%
+\begin{proposition}
+\label{prop:cs-eq-3vl}
+For every database instance $I$ and query $Q_\text{3vl}$,
+ let $O$ be the result of running $Q_\text{3vl}$ on $I$, 
+ under the standard 3-valued logic semantics.
+Let $I'$ be the result of normalizing $I$ into Column Normal Form.
+Then there is always a query $Q_\text{cs}$ such that
+ running $Q_\text{cs}$ on $I'$ under Columnar Semantics returns $O'$,
+ and the full outer join of $O'$ is the same as $O$.
+And when $I$ and $Q_\text{3vl}$ are null-free, $Q_\text{cs}$ 
+ is the same as $Q_\text{3vl}$.
+\end{proposition}
+%
+\begin{proposition}
+\label{prop:3vl-eq-cs}
+Conversely, for every database instance $I'$ and query $Q_\text{cs}$,
+ let $O'$ be the result of running $Q_\text{cs}$ on $I'$, 
+ under Columnar Semantics.
+Let $I$ be the full outer join of $I'$.
+Then there is always a query $Q_\text{3vl}$ such that
+ running $Q_\text{3vl}$ on $I$ under the standard 3-valued logic semantics returns $O$,
+ and normalizing $O$ into Column Normal Form returns $O'$.
+When $I'$ does not contain missing entries and $Q'$ does not use \lstinline|MISSING|,
+ $Q_\text{3vl}$ is the same as $Q_\text{cs}$.
+\end{proposition}
+%
+Figure~\ref{fig:3vl-cs} illustrates the propositions, 
+ where ``c.n.f.'' means normalizing each table in $I$ into Column Normal Form,
+ and $\Join$ takes the full outer join of every group of normalized tables.
 
 Instead of a formal proof, 
  we provide an intuitive argument based on the following observation:
@@ -799,7 +853,8 @@ Under Columnar Semantics,
 \end{example}
 %
 We would argue that the result produced 
- by Columnar Semantics is more intuitive;
+ by Columnar Semantics is more intuitive\footnote{On this example, 
+ Columnar Semantics agrees with 3-valued logic semantics.};
  but since our goal is to capture the 2-valued logic semantics,
  we must find a way to simulate its behavior.
 Our solution is as follows.
@@ -836,48 +891,23 @@ Together with the result by Peterfreund and Libkin~\cite{DBLP:conf/pods/LibkinP2
 \section{Discussion}
 \label{sec:conclusion}
 
-{\color{red} We are actually linear. Test Columnar Semantics .}
-
 With Column Normal Form and Columnar Semantics, 
  we take the first step towards a semantics for SQL
  completely without nulls.
 Yet much remains to be done.
 One immediate task is to formally prove our claims
- in Section~\ref{sec:cv3}: 
-%
-{\color{red} Move the conjecture to Section~\ref{sec:cv3}}
-%
-\begin{conjecture}
-For every query $Q^{3v}$ in the standard 3-valued semantics, 
- there is a set of expanded queries $\vec{Q}^{cs}$ in Columnar Semantics,
- where the size of $\vec{Q}^{cs}$ is linear in the size of $Q^{3v}$,
- and $\vec{Q}^{cs}$ simulates $Q^{3v}$.
-In the converse, for every (non-expanded) $Q^{cs}$ query in Columnar Semantics, 
- there is a $Q^{3v}$ query in the standard 3-valued semantics,
- where the size of $Q^{3v}$ is linear in the size of $Q^{cs}$,
-  and $Q^{3v}$ simulates $Q^{cs}$.
-\end{conjecture}
-%
-The first direction ensures we can express every SQL query 
- in Columnar Semantics succintly, 
- and the other direction ensures we can compile
- every query in Columnar Semantics into the standard semantics
- efficiently.
-This is remniscient of the result by Peterfreund and Libkin~\cite{DBLP:conf/pods/LibkinP23},
- that their 2-valued semantics can be efficiently mapped to the standard semantics and back.
-
-Even with a linear expansion scheme, 
+ in Propositions~\ref{prop:3vl-eq-cs} and~\ref{prop:cs-eq-3vl}.
+But even if we are certain that Columnar Semantics 
+ captures the standard semantics,
  it is far from obvious that 
  we can always compile every Columnar Semantics query 
- into an optimal 3-valued logic query.
+ into an {\em optimal} 3-valued logic query.
 An effective optimizer is necessary to make 
  Columnar Semantics practical.
 Another real-world concern is that,
  adopting Columnar Semantics 
  as a front-end for SQL introduces an additional abstraction layer,
  which can complicate debugging and profiling.
-
-\balance
 
 A potential solution to the challenges in 
  both performance and the user experience
@@ -915,6 +945,24 @@ Indeed, loading a \textsf{CSV} file to RelationalAI
  will create a relation where each row is assigned a row number, 
  and the first action performed by the user is almost always 
  to manurally decompose this relation into Graph Normal Form~\cite{RAIDocumentation}.
+
+By the end of the day, \textbf{the only salient test of a semantics for SQL
+ is to write queries with it}.
+Can the semantics help analysts ask real questions 
+ over real data?
+Is it more clear than SQL, 
+ and can it be efficiently implemented by a database engine?
+To answer these questions, 
+ we propose MIA (Missing Information Artifacts),
+ a collection of queries and datasets 
+ for handling missing information.
+We initialized the collection with the data release 
+ from the SQLShare project~\cite{DBLP:conf/sigmod/JainMHHL16},
+ containing thousands of queries written to analyze scientific data.
+MIA serves as a test bed for new semantics for SQL, 
+ or even entirely new query languages:
+ if you believe your semantics/language is better than SQL,
+ try rewriting the queries in MIA with it!
 
 We conclude by noting that
  the Column Normal Form has the potential of 
