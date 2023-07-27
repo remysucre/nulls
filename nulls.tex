@@ -3,6 +3,8 @@
 \usepackage{xspace}
 \usepackage{listings}
 \usepackage{subcaption}
+\usepackage{tikz}
+\usetikzlibrary{matrix}
 
 \lstset{
   mathescape=true,
@@ -589,6 +591,24 @@ We call this new semantics {\em Columnar Semantics}.
 
 \section{Columnar Semantics}
 \label{sec:cs}
+
+\begin{figure}
+\centering
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=3em, column sep=5em]
+  {
+    I & O \\
+    I' & O' \\
+  };
+
+  \draw[->] (m-1-1) -- (m-1-2) node[midway, align=center, fill=white] {$Q_\text{3vl}$};
+  \draw[->] (m-1-1) -- (m-2-1) node[midway, align=center, fill=white] {c.n.f.};
+  \draw[->] (m-2-1) -- (m-2-2) node[midway, align=center, fill=white] {$Q_\text{cs}$};
+  \draw[->] (m-2-2) -- (m-1-2) node[midway, align=center, fill=white] {$\Join$};
+\end{tikzpicture}
+\caption{Relating 3-valued logic to Columnar Semantics.}
+\label{fig:3vl-cs}
+\end{figure}
 
 Intuitively, Columnar Semantics treats a standard SQL query 
  as a syntactice sugar for another set of {\em expanded queries}
