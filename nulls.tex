@@ -570,6 +570,7 @@ SELECT R_Adress.Address
    AND R1.Author = "Codd"
 \end{lstlisting}
 \caption{Simulating the query in~\ref{fig:codd}.}
+\label{fig:codd-simulate}
 \end{subfigure}
 \caption{Simulating a SQL query over Column Normal Form.}
 \label{fig:simulate}
@@ -577,13 +578,10 @@ SELECT R_Adress.Address
 
 \begin{example}
 \label{ex:cnf-query}  
-The following query over relation \lstinline|R| in Figure~\ref{fig:table-null}: 
-%
-%
-can be simulated by the query:
-%
-%
-where \lstinline|R_id|, \lstinline|R_Author|, and \lstinline|R_Address|
+The query in Figure~\ref{fig:codd},
+ over relation \lstinline|R| in Figure~\ref{fig:table-null},
+ can be simulated by the query in Figure~\ref{fig:codd-simulate},
+ where \lstinline|R_id|, \lstinline|R_Author|, and \lstinline|R_Address|
  are the normalized relations for the key column, 
  the \textsf{Author} column, and the \textsf{Address} column, respectively.
 In this example, the join with \lstinline|R_id| can be omitted, 
@@ -901,7 +899,7 @@ But even if we are certain that Columnar Semantics
  captures the standard semantics,
  it is far from obvious that 
  we can always compile every Columnar Semantics query 
- into an {\em optimal} 3-valued logic query.
+ into an {\em optimal} query in the standard semantics.
 An effective optimizer is necessary to make 
  Columnar Semantics practical.
 Another real-world concern is that,
@@ -946,7 +944,7 @@ Indeed, loading a \textsf{CSV} file to RelationalAI
  and the first action performed by the user is almost always 
  to manurally decompose this relation into Graph Normal Form~\cite{RAIDocumentation}.
 
-By the end of the day, \textbf{the only salient test of a semantics for SQL
+By the end of the day, \textbf{the only salient way to test a semantics for SQL
  is to write queries with it}.
 Can the semantics help analysts ask real questions 
  over real data?
@@ -975,6 +973,12 @@ In Column Normal Form,
  because every row has a unique opaque key.
 However, we shall defer further discussions 
  to the future -- starting one fire is enough.
+
+\begin{acks}
+We thank Liat Peterfreund, Leonid Libkin, 
+ Stanley Yang, and Dan Grossman for stimulating 
+ discussions on the topic of this paper.
+\end{acks}
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{nulls}
