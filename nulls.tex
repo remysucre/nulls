@@ -23,10 +23,12 @@
 \author{Yisu Remy Wang}
 \affiliation{%
   \institution{University of Washington}
-  \city{Seattle, WA}
-  \country{USA}
+  \city{}
+  \country{}
+  % \city{Seattle, WA}
+  % \country{USA}
 }
-\email{remywang@cs.washington.edu}
+% \email{remywang@cs.washington.edu}
 
 \begin{abstract}
 Since the inception of SQL, 
@@ -411,6 +413,7 @@ Boyce & San Jose \\
 \label{fig:table-normalized}
 \end{subfigure}
 \caption{A relation with nulls and its decomposition.}
+\Description{A relation with nulls and its decomposition.}
 \end{figure}
 
 \begin{example}
@@ -525,6 +528,7 @@ We say these $k+1$ relations are in {\em Column Normal Form}.
 \end{tabular}
 \end{subfigure}
 \caption{The relation in Figure~\ref{fig:table-null} in Column Normal Form.}
+\Description{The relation in Figure~\ref{fig:table-null} in Column Normal Form.}
 \label{fig:cnf}
 \end{figure}
 
@@ -588,6 +592,7 @@ SELECT R_Adress.Address
 \label{fig:codd-simulate}
 \end{subfigure}
 \caption{Simulating a SQL query over Column Normal Form.}
+\Description{Simulating a SQL query over Column Normal Form.}
 \label{fig:simulate}
 \end{figure}
 
@@ -649,6 +654,7 @@ SELECT ids($\vec{R}$), rename$({\color{red}\gamma_2})$ FROM normalize$(\vec{R})$
 \dots
 \end{tabular}
 \caption{Expanded queries of $Q$ in Definition~\ref{def:cs}.}
+\Description{Expanded queries of $Q$ in Definition~\ref{def:cs}.}
 \label{fig:expanded}
 \end{figure}
 
@@ -664,6 +670,7 @@ SELECT ids($\vec{R}$), rename$({\color{red}\gamma_2})$ FROM normalize$(\vec{R})$
 &\cup \{ R_a.\text{id} = R_\text{id}.\text{id} \mid R.a \in \phi \}
 \end{align*}
 \caption{Auxiliary functions used in Definition~\ref{def:cs}.}
+\Description{Auxiliary functions used in Definition~\ref{def:cs}.}
 \label{fig:aux}
 \end{figure}
 
@@ -766,6 +773,7 @@ During expansion, we desugar \lstinline|R MISSING a|
 \end{tikzpicture}
 \end{subfigure}
 \caption{Relating 3-valued logic to Columnar Semantics.}
+\Description{Relating 3-valued logic to Columnar Semantics.}
 \label{fig:3vl-cs}
 \end{figure}
 
@@ -802,7 +810,7 @@ Let $I$ be the full outer join of $I'$.
 Then there is always a query $Q_\text{3vl}$ such that
  running $Q_\text{3vl}$ on $I$ under the standard 3-valued logic semantics returns $O$,
  and normalizing $O$ into Column Normal Form returns $O'$.
-When $I'$ does not contain missing entries and $Q'$ does not use \lstinline|MISSING|,
+When $I'$ does not contain missing entries and $Q'$ does not use {\em \lstinline|MISSING|},
  $Q_\text{3vl}$ is the same as $Q_\text{cs}$.
 \end{proposition}
 %
