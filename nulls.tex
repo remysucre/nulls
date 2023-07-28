@@ -1,4 +1,4 @@
-\documentclass[sigconf]{acmart}
+\documentclass[sigconf]{cidr-2024}
 
 \usepackage{hyperref}
 \usepackage{xspace}
@@ -50,6 +50,20 @@ To evaluate Columnar Semantics and any other alternative semantics
  a collection of queries and data sets for handling missing information,
  and invite contributions from the community.
 \end{abstract}
+
+\begin{CCSXML}
+  <ccs2012>
+  <concept>
+  <concept_id>10002951.10002952.10003197.10010822.10010823</concept_id>
+  <concept_desc>Information systems~Structured Query Language</concept_desc>
+  <concept_significance>500</concept_significance>
+  </concept>
+  </ccs2012>
+\end{CCSXML}
+  
+\ccsdesc[500]{Information systems~Structured Query Language}
+
+\keywords{SQL, nulls, missing information, 3 valued logic, normal forms} 
 
 \maketitle
 
@@ -295,7 +309,7 @@ For example, neither \lstinline|NULL = NULL| nor \lstinline|NULL $\neq$ NULL|
  is the same as \lstinline|NOT (NULL = NULL)|.
 % Moreover, because \lstinline|NULL = NULL| is false, 
 %  the query in Example~\ref{ex:sql} still drops null entries.
-Peterfreund and Libkin resolves this with
+Peterfreund and Libkin addresses this with
  a more complex interpretation of comparisons,
  but it's not clear if this alternative interpretation
  introduces further complications.
